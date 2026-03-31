@@ -16,9 +16,6 @@ app.use(express.json());
 app.use("/vini", winesRouter);
 app.use("/orders", ordersRouter);
 
-// Routers
-app.use("/vini", winesRouter);
-
 // Error Handling
 const errorMiddlewares = require("./middlewares/errorsHandler");
 app.use(errorMiddlewares.error404);

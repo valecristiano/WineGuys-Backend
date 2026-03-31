@@ -6,10 +6,9 @@ const wineController = require("../controllers/wineController");
 router.get("/", wineController.index);
 
 // SHOW
-router.get("/:id", wineController.show);
+router.get("/:slug", wineController.show);
 
 // STORE
 router.post("/", wineController.store);
-
 
 module.exports = router;
