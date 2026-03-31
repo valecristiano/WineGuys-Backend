@@ -7,6 +7,7 @@ const appUrl = `http://localhost:${port}/`;
 // imports
 const notFound = require("./middlewares/notFound");
 const winesRouter = require("./Routers/wines");
+const ordersRouter = require("./Routers/orders");
 
 // middlewares
 const cors = require("cors");
@@ -15,16 +16,15 @@ app.use(cors({ origin: "http://localhost:5173" }));
 
 app.use(express.json());
 
+// Routers
+app.use("/wines", winesRouter);
+app.use("/orders", ordersRouter);
+
 // Error Handling
 const errorMiddlewares = require("./middlewares/errorsHandler");
 app.use(errorMiddlewares.error404);
 app.use(errorMiddlewares.error500);
 
-// Routers
-app.use("/wines", winesRouter);
-
 app.listen(process.env.APP_PORT, () => {
-  console.log(
-    "server listening on " + process.env.APP_URL + ":" + process.env.APP_PORT
-  );
+  console.log("server listening");
 });
