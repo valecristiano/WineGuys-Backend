@@ -5,8 +5,8 @@ const wineController = require("../controllers/wineController");
 // INDEX - tutti i vini senza categorie
 router.get("/", wineController.index);
 
-// INDEX - tutti i vini con categorie
-router.get("/vini", wineController.indexWithCategories);
+// INDEX - tutti i vini con categoria promo
+router.get("/promo", wineController.indexPromo);
 
 // SHOW
 router.get("/:slug", wineController.show);

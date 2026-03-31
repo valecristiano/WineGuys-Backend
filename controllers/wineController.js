@@ -16,13 +16,14 @@ const index = (req, res) => {
 };
 
 // INDEX - ritorna tutti i vini colla loro categoria
-const indexWithCategories = (req, res) => {
+const indexPromo = (req, res) => {
   // query che prende tutti i prodotti e fa JOIN conlle categorie
   const sql = `
    SELECT p.*, c.category_name
    FROM products p
    JOIN mrk_categories c 
    ON p.category_id = c.id
+   WHERE c.id = 1
    `;
 
   // esegue la query sul database
@@ -58,4 +59,4 @@ const store = (req, res) => {
   res.json({ message: "Vino aggiunto" });
 };
 
-module.exports = { index, indexWithCategories, show, store };
+module.exports = { index, indexPromo, show, store };

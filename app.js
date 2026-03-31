@@ -13,8 +13,8 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
 // Routers
-app.use("/", winesRouter);
-app.use("/orders", ordersRouter);
+app.use("/vini", winesRouter);
+app.use("/ordini", ordersRouter);
 
 // Error Handling
 const errorMiddlewares = require("./middlewares/errorsHandler");
