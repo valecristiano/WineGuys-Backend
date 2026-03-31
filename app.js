@@ -1,11 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
-const port = 3000;
-const appUrl = `http://localhost:${port}/`;
 
-// imports
-const notFound = require("./middlewares/notFound");
+
+
+// imports 
 const winesRouter = require("./Routers/wines");
 
 // middlewares
@@ -15,13 +14,16 @@ app.use(cors({ origin: "http://localhost:5173" }));
 
 app.use(express.json());
 
+
+// Routers
+app.use("/vini", winesRouter);
+
 // Error Handling
 const errorMiddlewares = require("./middlewares/errorsHandler");
 app.use(errorMiddlewares.error404);
 app.use(errorMiddlewares.error500);
 
-// Routers
-app.use("/wines", winesRouter);
+
 
 app.listen(process.env.APP_PORT, () => {
   console.log(
