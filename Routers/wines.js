@@ -20,9 +20,6 @@ router.get("/primavera", wineController.indexPrimavera);
 // SHOW
 router.get("/:slug", wineController.show);
 
-// STORE
-router.post("/", wineController.store);
-
 // SEARCH
 router.get("/search", wineController.searchSql);
 

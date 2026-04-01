@@ -128,7 +128,7 @@ const show = (req, res) => {
     res.json({ result: wine });
   });
 };
-const { handleFailQuery, handleResourceNotFound } = require("../utils/dbUtils");
+
 
 
 const searchSql = (req, res) => {
@@ -208,4 +208,4 @@ const searchSql = (req, res) => {
   });
 };
 
-module.exports = { index, indexPromo, indexPremi, indexPiuVenduti, indexPrimavera, show, store, searchSql };
+module.exports = { index, indexPromo, indexPremi, indexPiuVenduti, indexPrimavera, show, searchSql };
