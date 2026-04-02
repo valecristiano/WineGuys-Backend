@@ -6,7 +6,9 @@ const { handleFailQuery, handleResourceNotFound } = require("../utils/dbUtils");
 
 // INDEX - ritorna tutti in vini senza categorie
 const index = (req, res) => {
-  const sql = `SELECT * FROM products`;
+  const sql = `SELECT *,
+  CONCAT('http://localhost:3000/wines/', img) AS img_url
+   FROM products`;
 
   // esegue la query sul database
   connection.query(sql, (err, results) => {
@@ -203,4 +205,13 @@ const searchSql = (req, res) => {
       results,
     });
   });
+};
+module.exports = {
+  index,
+  indexPromo,
+  indexPremi,
+  indexPiuVenduti,
+  indexPrimavera,
+  show,
+  searchSql,
 };
