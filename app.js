@@ -6,6 +6,7 @@ const app = express();
 const winesRouter = require("./Routers/wines");
 const ordersRouter = require("./Routers/orders");
 const emailRouter = require("./Routers/email");
+const searchRouter = require("./Routers/search");
 
 // middlewares
 const cors = require("cors");
@@ -17,6 +18,7 @@ app.use(express.json());
 app.use("/vini", winesRouter);
 app.use("/ordini", ordersRouter);
 app.use("/email", emailRouter);
+app.use("/cerca", searchRouter);
 
 // Error Handling
 const errorMiddlewares = require("./middlewares/errorsHandler");
