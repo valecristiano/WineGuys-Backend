@@ -4,6 +4,7 @@ const connection = require("../connections/connDb");
 const shippingFee = 7.9;
 const shippingFreeSpend = 60.0;
 
+//POST - Checkout
 function postCheckout(req, res) {
   //prendo i dati dalla request - cart_items è l'array dei prodotti che sono nell'ordine
   const { customer, cart_items, discount_code } = req.body;
@@ -27,7 +28,7 @@ function postCheckout(req, res) {
 
   //query di controllo delle quantità dei prodotti
   connection.query(sqlCheck, [productIds], (err, winesList) => {
-    if (err) return res.status(500).json({ message: "Errore controllo stock", error: err.sqlMessage });
+    if (err) return res.status(500).json({ success: false, message: "Errore controllo stock", error: err.sqlMessage });
 
     //calcolo prezzo e controllo stock
     let serverTotal = 0;
@@ -65,7 +66,7 @@ function postCheckout(req, res) {
 
       //query per validare coupon e calcolare prezzo scontato
       connection.query(sqlCoupon, [discount_code], (err, couponResults) => {
-        if (err) return res.status(500).json({ message: "Errore coupon" });
+        if (err) return res.status(500).json({ success: false, message: "Errore coupon" });
 
         const coupon = couponResults[0];
         const now = new Date();
@@ -78,7 +79,7 @@ function postCheckout(req, res) {
           return res.status(400).json({ message: "Codice sconto scaduto" });
         }
         if (serverTotal < coupon.min_spending) {
-          return res.status(400).json({ message: `Spesa minima non raggiunta (${coupon.min_spending}€)` });
+          return res.status(400).json({ message: `Spesa minima dello sconto non raggiunta (${coupon.min_spending}€)` });
         }
 
         // calcolo il prezzo finale scontato
@@ -122,7 +123,7 @@ function postCheckout(req, res) {
 
       //query di ricezione dati cliente
       connection.query(sqlCustomer, customerValues, (err, customerResult) => {
-        if (err) return res.status(500).json({ message: "Errore inserimento cliente", error: err.sqlMessage });
+        if (err) return res.status(500).json({ success: false, message: "Errore inserimento cliente", error: err.sqlMessage });
 
         //recupero l'id del nuovo cliente assegnato da workbench
         const customerId = customerResult.insertId;
@@ -132,7 +133,7 @@ function postCheckout(req, res) {
 
         //query di ricezione dati dell'ordine
         connection.query(sqlOrder, [customerId, price, finalShippingFee || 0], (err, orderResult) => {
-          if (err) return res.status(500).json({ message: "Errore inserimento ordine", error: err.sqlMessage });
+          if (err) return res.status(500).json({ success: false, message: "Errore inserimento ordine", error: err.sqlMessage });
 
           //recupero l'id del nuovo ordine assegnato da workbench
           const orderId = orderResult.insertId;
@@ -151,7 +152,7 @@ function postCheckout(req, res) {
             connection.query(sqlCartItem, [orderId, wine.product_id, wine.quantity, wine.price], (err) => {
               if (err && !errorSent) {
                 errorSent = true;
-                return res.status(500).json({ message: "Errore inserimento ordine", error: err.sqlMessage });
+                return res.status(500).json({ success: false, message: "Errore inserimento ordine", error: err.sqlMessage });
               }
 
               //elimino la quantità venduta dalla colonna stock_quantity del singolo vino
@@ -164,11 +165,11 @@ function postCheckout(req, res) {
               connection.query(sqlUpdateStock, [wine.quantity, wine.product_id, wine.quantity], (err, result) => {
                 if (err && !errorSent) {
                   errorSent = true;
-                  return res.status(500).json({ message: "Errore aggiornamento quantità", error: err.sqlMessage });
+                  return res.status(500).json({ success: false, message: "Errore aggiornamento quantità", error: err.sqlMessage });
                 }
                 if (result.affectedRows === 0 && !errorSent) {
                   errorSent = true;
-                  return res.status(400).json({ message: `Quantità insufficiente per il prodotto ${wine.product_name}` });
+                  return res.status(400).json({ success: false, message: `Quantità insufficiente per il prodotto ${wine.product_name}` });
                 }
 
                 // aumento il contatore se l'inserimento del vino è andata a buon fine
@@ -196,5 +197,49 @@ function postCheckout(req, res) {
     }
   });
 }
+//POST - Coupon
+function validateCoupon(req, res) {
+  const { discount_code, total_amount } = req.body;
 
-module.exports = { postCheckout };
+  if (!discount_code) {
+    return res.status(400).json({ success: false, message: "Inserisci un codice" });
+  }
+
+  const sqlCoupon = `SELECT * FROM coupons WHERE discount_code = ? AND valid = 1`;
+
+  connection.query(sqlCoupon, [discount_code], (err, results) => {
+    if (err) return res.status(500).json({ success: false, message: "Errore database" });
+
+    const coupon = results[0];
+    const now = new Date();
+
+    // controllo esistenza codice
+    if (!coupon) {
+      return res.status(404).json({ success: false, message: "Codice sconto non esistente o non valido" });
+    }
+
+    // controllo validità
+    if (now < new Date(coupon.start_date) || now > new Date(coupon.end_date)) {
+      return res.status(400).json({ success: false, message: "Codice sconto scaduto o non ancora attivo" });
+    }
+
+    // controllo pesa minima
+    if (total_amount < coupon.min_spending) {
+      return res.status(400).json({
+        success: false,
+        message: `Spesa minima per lo sconto non raggiunta. Aggiungi ${(coupon.min_spending - total_amount).toFixed(2)}€ per usare questo codice.`,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Codice applicato!",
+      coupon: {
+        discount_code: coupon.discount_code,
+        discount_value: coupon.discount_value,
+      },
+    });
+  });
+}
+
+module.exports = { postCheckout, validateCoupon };
