@@ -6,7 +6,12 @@ const shippingFreeSpend = 60.0;
 
 function postCheckout(req, res) {
   //prendo i dati dalla request - cart_items è l'array dei prodotti che sono nell'ordine
-  const { customer, total_price, cart_items, discount_code } = req.body;
+  const { customer, cart_items, discount_code } = req.body;
+
+  //validazione dati
+  if (!customer.first_name || !customer.second_name || !customer.email || !customer.cellphone || !customer.billing_street || !customer.billing_city || !customer.billing_postal_code) {
+    return res.status(400).json({ success: false, message: "Dati cliente incompleti o mancanti." });
+  }
 
   //CONTROLLO QUANTITà INIZIALE
   //se non arriva l'array dei prodotti o è vuoto do errore
@@ -18,13 +23,17 @@ function postCheckout(req, res) {
   const productIds = cart_items.map((item) => item.product_id);
 
   //seleziono i dati dei prodotti in cart_items tramite id
-  const sqlCheck = `SELECT id, product_name, stock_quantity FROM products WHERE id IN (?)`;
+  const sqlCheck = `SELECT id, product_name, stock_quantity, price, promotion_price FROM products WHERE id IN (?)`;
 
   //query di controllo delle quantità dei prodotti
   connection.query(sqlCheck, [productIds], (err, winesList) => {
     if (err) return res.status(500).json({ message: "Errore controllo stock", error: err.sqlMessage });
 
-    //verifichiamo lo stoch di ogni prodotto nel carrello
+    //calcolo prezzo e controllo stock
+    let serverTotal = 0;
+    const validatedItems = [];
+
+    //verifichiamo lo stock di ogni prodotto nel carrello
     for (const item of cart_items) {
       const wine = winesList.find((product) => product.id === item.product_id);
 
@@ -33,9 +42,21 @@ function postCheckout(req, res) {
           message: `Stock insufficiente per ${wine ? wine.product_name : "ID " + item.product_id}`,
         });
       }
+      // prendo il prezzo (promo o normale) dal DB
+      const realPrice = wine.promotion_price !== null ? wine.promotion_price : wine.price;
+
+      // calcolo totale in base alle quantità
+      serverTotal += realPrice * item.quantity;
+
+      // salvo i dati validati in validatedItems
+      validatedItems.push({
+        ...item,
+        price: realPrice,
+      });
     }
+
     //CONTROLLO PRESENZA COUPON
-    let finalPrice = total_price;
+    let finalPrice = serverTotal;
 
     //se è stato inserito un codice sconto
     if (discount_code) {
@@ -56,25 +77,24 @@ function postCheckout(req, res) {
         if (now < new Date(coupon.start_date) || now > new Date(coupon.end_date)) {
           return res.status(400).json({ message: "Codice sconto scaduto" });
         }
-        if (total_price < coupon.min_spending) {
+        if (serverTotal < coupon.min_spending) {
           return res.status(400).json({ message: `Spesa minima non raggiunta (${coupon.min_spending}€)` });
         }
 
         // calcolo il prezzo finale scontato
-        finalPrice = total_price * (1 - parseFloat(coupon.discount_value));
+        finalPrice = serverTotal * (1 - parseFloat(coupon.discount_value));
 
         // Proseguiamo con il prezzo scontato
-        startInsertion(finalPrice);
+        startInsertion(finalPrice, validatedItems);
       });
     } else {
       // Se non c'è coupon, proseguiamo col prezzo originale
-      startInsertion(finalPrice);
+      startInsertion(finalPrice, validatedItems);
     }
 
     //INSERIMENTO CLIENTE E ORDINE
-    function startInsertion(price) {
+    function startInsertion(price, itemsForCart) {
       //controllo spese di spedizione gratuite
-
       const finalShippingFee = price >= shippingFreeSpend ? 0 : shippingFee;
 
       //inserisco il CLIENTE
@@ -123,7 +143,7 @@ function postCheckout(req, res) {
           let errorSent = false;
 
           //ciclo di query sui singoli prodotti acqistati
-          cart_items.forEach((wine) => {
+          itemsForCart.forEach((wine) => {
             //inserisco il vino nella tabella orders_products
             const sqlCartItem = `INSERT INTO orders_products (order_id, product_id, quantity, current_price) VALUES (?, ?, ?, ?)`;
 
