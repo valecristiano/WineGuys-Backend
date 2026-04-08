@@ -1,4 +1,5 @@
 const connection = require("../connections/connDb");
+const { sendOrderConfirmation } = require("../utils/mail");
 
 //dati spedizione
 const shippingFee = 7.9;
@@ -177,6 +178,21 @@ function postCheckout(req, res) {
 
                 // rispondo solo quando il contatore corrisponde al numero di prodotti nell'ordine
                 if (wineUnit === cart_items.length && !errorSent) {
+                  //invio mail da backend
+                  const emailData = {
+                    customer: customer,
+                    cart_items: itemsForCart,
+                    total_price: price.toFixed(2),
+                    shipping_fee: finalShippingFee.toFixed(2),
+                  };
+
+                  console.log("Dati email:", emailData);
+
+                  // funzione mail
+                  sendOrderConfirmation(emailData)
+                    .then(() => console.log("Email inviata correttamente"))
+                    .catch((mailErr) => console.error("Errore invio email:", mailErr));
+
                   res.json({
                     success: true,
                     message: "Ordine completato con successo!",
