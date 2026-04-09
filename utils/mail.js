@@ -3,14 +3,20 @@ const nodemailer = require("nodemailer");
 // crea il trasportatore con le credenziali Mailtrap per i test
 // Mailtrap è un servizio che simula una casella email reale senza mandare email vere
 // in produzione si può sostituire con Gmail cambiando solo host, port, user e pass
-const transporter = nodemailer.createTransport({
-  host: process.env.MAIL_HOST,
-  port: process.env.MAIL_PORT,
-  auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS,
-  },
-});
+//sostituisci il transporter fisso con una funzione
+// crea un nuovo transporter per ogni invio per evitare il limite di email al secondo di Mailtrap
+// Mailtrap è un servizio che simula una casella email reale senza mandare email vere
+// in produzione si può sostituire con Gmail cambiando solo host, port, user e pass
+function createTransporter() {
+  return nodemailer.createTransport({
+    host: process.env.MAIL_HOST,
+    port: process.env.MAIL_PORT,
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+  });
+}
 
 // funzione per mandare l'email di conferma ordine al cliente
 // viene chiamata dal orderController dopo che l'ordine è stato salvato nel database
@@ -46,7 +52,8 @@ const sendOrderConfirmation = async (orderData) => {
         <p>Il team WineGuys 🍷</p>`,
   };
 
-  await transporter.sendMail(mailOptions);
+  // usa createTransporter() invece di transporter
+  await createTransporter().sendMail(mailOptions);
 };
 
 // funzione per mandare l'email di notifica nuovo ordine al gestore di WineGuys
@@ -86,7 +93,7 @@ const sendOwnerNotification = async (orderData) => {
         <p>Il team WineGuys 🍷</p>`,
   };
 
-  await transporter.sendMail(mailOptions);
+  await createTransporter().sendMail(mailOptions);
 };
 
 // esportiamo le due funzioni per usarle nel orderController

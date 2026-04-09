@@ -258,17 +258,20 @@ function postCheckout(req, res) {
                             console.error("Errore invio email:", mailErr)
                           );
 
-                        // funzione mail gestore di WineGuys coi dati dell'ordine
-                        sendOwnerNotification(emailData)
-                          .then(() =>
-                            console.log("Email gestore inviata correttamente")
-                          )
-                          .catch((mailErr) =>
-                            console.error(
-                              "Errore invio email gestore:",
-                              mailErr
+                        // funzione mail gestore di WineGuys coi dati dell'ordine - aspetta 2 secondi prima di mandare l'email al gestore
+                        // per evitare il limite di email al secondo di Mailtrap
+                        setTimeout(() => {
+                          sendOwnerNotification(emailData)
+                            .then(() =>
+                              console.log("Email gestore inviata correttamente")
                             )
-                          );
+                            .catch((mailErr) =>
+                              console.error(
+                                "Errore invio email gestore:",
+                                mailErr
+                              )
+                            );
+                        }, 30000);
 
                         res.json({
                           success: true,
