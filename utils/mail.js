@@ -23,7 +23,7 @@ function createTransporter() {
 // riceve i dati dell'ordine e manda una email al cliente con il riepilogo completo
 // così il cliente sa esattamente cosa ha comprato, quanto ha pagato e dove verrà spedito
 const sendOrderConfirmation = async (orderData) => {
-  const { customer, cart_items, total_price, shipping_fee } = orderData;
+  const { customer, cart_items, shipping_fee, discount_code, subtotal, final_total } = orderData;
 
   const mailOptions = {
     from: process.env.MAIL_USER,
@@ -38,16 +38,18 @@ const sendOrderConfirmation = async (orderData) => {
               .map(
                 (item) =>
                   `<li>
-            Prodotto ID: ${item.product_id} - Quantità: ${item.quantity} - Prezzo: €${item.price} 
-            </li>`
+                ${item.product_name} - Quantità: ${item.quantity} - Prezzo: €${item.promotion_price ? item.promotion_price : item.price}
+              </li>`,
               )
               .join("")}
         </ul>
-        <p><strong>Totale: €${total_price}</strong></p>
+
+        <p>Subtotale prodotti: €${subtotal}</p>
+        ${discount_code ? `<p>Codice Sconto: ${discount_code}</p>` : ""}
         <p>Spese di spedizione: €${shipping_fee}</p>
-        <p>Indirizzo di spedizione: ${customer.shipping_street}, ${
-      customer.shipping_city
-    }</p>
+       <p><strong>Totale: €${final_total}</strong></p>
+
+        <p>Indirizzo di spedizione: ${customer.shipping_street}, ${customer.shipping_city}</p>
         <br>
         <p>Il team WineGuys 🍷</p>`,
   };
@@ -61,7 +63,7 @@ const sendOrderConfirmation = async (orderData) => {
 // serve per avvisare il gestore che deve preparare e spedire i prodotti ordinati
 // contiene tutti i dati del cliente e i prodotti ordinati per facilitare la gestione
 const sendOwnerNotification = async (orderData) => {
-  const { customer, cart_items, total_price, shipping_fee } = orderData;
+  const { customer, cart_items, shipping_fee, discount_code, subtotal, final_total } = orderData;
 
   const mailOptions = {
     from: process.env.MAIL_USER,
@@ -73,22 +75,24 @@ const sendOwnerNotification = async (orderData) => {
         <p>Nome: ${customer.first_name} ${customer.second_name}</p>
         <p>Email: ${customer.email}</p>
         <p>Telefono: ${customer.cellphone}</p>
-        <p>Indirizzo di spedizione: ${customer.shipping_street}, ${
-      customer.shipping_city
-    }, ${customer.shipping_postal_code}</p>
+        <p>Indirizzo di spedizione: ${customer.shipping_street}, ${customer.shipping_city}, ${customer.shipping_postal_code}</p>
         <h2>Prodotti ordinati:</h2>
         <ul>
             ${cart_items
               .map(
                 (item) =>
                   `<li>
-            Prodotto ID: ${item.product_id} - Quantità: ${item.quantity} - Prezzo: €${item.price}
-            </li>`
+            Nome prodotto:${item.product_name} (ID: ${item.product_id}) -  Quantità: ${item.quantity} - Prezzo: €${item.promotion_price ? item.promotion_price : item.price}
+            </li>`,
               )
               .join("")}
         </ul>
-        <p><strong>Totale ordine: €${total_price}</strong></p>
-        <p>Spese di spedizione: €${shipping_fee}</p>
+        <p><strong>Riepilogo:</strong></p>
+         <p>Subtotale prodotti: €${subtotal}</p>
+    ${discount_code ? `<p>Codice Sconto: ${discount_code}</p>` : ""}
+    <p>Spese di spedizione: €${shipping_fee}</p>
+    <p><strong>Totale: €${final_total}</strong></p>
+
         <br>
         <p>Il team WineGuys 🍷</p>`,
   };
