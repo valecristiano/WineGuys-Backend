@@ -38,6 +38,10 @@ const index = (req, res) => {
     conditions.push("price > 20 AND price <=50");
   } else if (prezzo === "50+") {
     conditions.push("price >50");
+    // filtro per vini in promozione
+  } else if (prezzo === "promo") {
+    // mostra solo i vini che hanno un prezzo scontato (promotion_price non è nullo)
+    conditions.push("promotion_price IS NOT NULL");
   }
 
   // costruisce la WHERE clause solo se ci sono filtri
