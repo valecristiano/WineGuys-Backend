@@ -44,6 +44,13 @@ const index = (req, res) => {
     conditions.push("promotion_price IS NOT NULL");
   }
 
+  // filtro per vini non esauriti
+  // se la checkbox nonEsauriti è attiva mostra solo i vini con stock_quantity maggiore di 0
+  const { nonEsauriti } = req.query;
+  if (nonEsauriti === "true") {
+    conditions.push("stock_quantity > 0");
+  }
+
   // costruisce la WHERE clause solo se ci sono filtri
   const whereClause =
     conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
